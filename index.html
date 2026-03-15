@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>小劇場LPドラフトジェネレータ</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="app-header">
+    <h1>小劇場LPドラフトジェネレータ</h1>
+  </header>
+
+  <div class="app-layout">
+    <aside class="form-column">
+      <div class="form-panels">
+        <section class="panel panel-accordion is-open" data-panel="hero">
+          <div class="panel-header">
+            <button type="button" class="panel-toggle" aria-expanded="true" aria-controls="panel-body-hero">基本情報 / メイン表示</button>
+          </div>
+          <div class="panel-body" id="panel-body-hero">
+            <div class="form-group">
+              <label>ページタイトル</label>
+              <input type="text" data-bind="page.title" placeholder="公演タイトル">
+            </div>
+            <div class="form-group">
+              <label>劇団名 / 主催名</label>
+              <input type="text" data-bind="hero.companyName" placeholder="劇団名">
+            </div>
+            <div class="form-group">
+              <label>公演タイトル / キャッチコピー</label>
+              <input type="text" data-bind="hero.headline" placeholder="公演タイトル・キャッチコピー">
+            </div>
+            <div class="form-group">
+              <label>サブコピー</label>
+              <input type="text" data-bind="hero.subtext" placeholder="公演期間・会場・短い案内">
+            </div>
+            <div class="form-group">
+              <label>メインビジュアルURL</label>
+              <input type="url" data-bind="hero.imageUrl" data-image-url-input="true" placeholder="https://...">
+              <p class="form-help">画像を表示したい場合は、ブラウザで画像を開いてそのURLを貼り付けます。Web上の画像URLがない場合は、下のファイル選択からローカル画像も使えます。</p>
+              <p class="form-help">推奨サイズは横1600px以上・縦900px以上です。ファイルサイズは1MB以下を目安にしてください。</p>
+              <input type="file" class="image-file-input" data-image-target="hero.imageUrl" accept="image/*">
+              <div class="inline-actions">
+                <button type="button" class="btn btn-secondary btn-sm" data-clear-image-target="hero.imageUrl">画像をクリア</button>
+                <span class="field-status" data-image-status-target="hero.imageUrl">未設定</span>
+              </div>
+              <p class="form-help">ローカル画像は完成HTMLに埋め込まれます。画像が大きいと保存データも重くなります。</p>
+            </div>
+            <div class="form-group">
+              <label>メインボタン文言</label>
+              <input type="text" data-bind="hero.buttonText" placeholder="チケット予約">
+            </div>
+            <div class="form-group">
+              <label>メインボタンURL</label>
+              <input type="url" data-bind="hero.buttonUrl" placeholder="#ticket または https://...">
+            </div>
+            <div class="form-group">
+              <label>メイン表示レイアウト（スマホ）</label>
+              <select data-bind="hero.layout.mobile">
+                <option value="centered">centered</option>
+                <option value="image-first">image-first</option>
+                <option value="text-first">text-first</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>メイン表示レイアウト（PC）</label>
+              <select data-bind="hero.layout.desktop">
+                <option value="two-column">two-column</option>
+                <option value="centered">centered</option>
+                <option value="wide">wide</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel panel-accordion is-open" data-panel="overview">
+          <div class="panel-header">
+            <button type="button" class="panel-toggle" aria-expanded="true" aria-controls="panel-body-overview">公演概要</button>
+          </div>
+          <div class="panel-body" id="panel-body-overview">
+            <div class="form-group">
+              <label>タイトル</label>
+              <input type="text" data-bind="overview.title" placeholder="公演概要">
+            </div>
+            <div class="form-group">
+              <label>作・演出</label>
+              <input type="text" data-bind="overview.authorDirector" placeholder="">
+            </div>
+            <div class="form-group">
+              <label>ジャンル</label>
+              <input type="text" data-bind="overview.genre" placeholder="">
+            </div>
+            <div class="form-group">
+              <label>上演時間</label>
+              <input type="text" data-bind="overview.duration" placeholder="約120分">
+            </div>
+            <div class="form-group">
+              <label>公演期間（要約）</label>
+              <input type="text" data-bind="overview.periodSummary" placeholder="">
+            </div>
+            <div class="form-group">
+              <label>会場</label>
+              <input type="text" data-bind="overview.venue" placeholder="">
+            </div>
+            <div class="form-group">
+              <label>説明文</label>
+              <textarea data-bind="overview.description" rows="3" placeholder=""></textarea>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel panel-accordion" data-panel="story">
+          <div class="panel-header">
+            <button type="button" class="panel-toggle" aria-expanded="false" aria-controls="panel-body-story">あらすじ</button>
+            <label class="panel-control"><input type="checkbox" data-bind="sections.story" checked> 出力する</label>
+          </div>
+          <div class="panel-body" id="panel-body-story" hidden>
+            <div class="form-group">
+              <label>リード</label>
+              <textarea data-bind="story.lead" rows="2" placeholder=""></textarea>
+            </div>
+            <div class="form-group">
+              <label>本文</label>
+              <textarea data-bind="story.body" rows="5" placeholder=""></textarea>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel panel-accordion" data-panel="highlights">
+          <div class="panel-header">
+            <button type="button" class="panel-toggle" aria-expanded="false" aria-controls="panel-body-highlights">見どころ</button>
+            <label class="panel-control"><input type="checkbox" data-bind="sections.highlights" checked> 出力する</label>
+          </div>
+          <div class="panel-body" id="panel-body-highlights" hidden>
+            <div class="highlights-fields" id="highlights-fields"></div>
+            <div class="dynamic-actions">
+              <button type="button" class="btn btn-secondary btn-sm" data-add-collection="highlights">見どころを追加</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel panel-accordion" data-panel="cast">
+          <div class="panel-header">
+            <button type="button" class="panel-toggle" aria-expanded="false" aria-controls="panel-body-cast">キャスト</button>
+            <label class="panel-control"><input type="checkbox" data-bind="sections.cast" checked> 出力する</label>
+          </div>
+          <div class="panel-body" id="panel-body-cast" hidden>
+            <p class="form-help">プロフィールは改行が反映されます。必要なら &lt;br&gt; も使えます。</p>
+            <div class="cast-fields" id="cast-fields"></div>
+            <div class="dynamic-actions">
+              <button type="button" class="btn btn-secondary btn-sm" data-add-collection="cast">キャストを追加</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel panel-accordion" data-panel="staff">
+          <div class="panel-header">
+            <button type="button" class="panel-toggle" aria-expanded="false" aria-controls="panel-body-staff">スタッフ</button>
+            <label class="panel-control"><input type="checkbox" data-bind="sections.staff" checked> 出力する</label>
+          </div>
+          <div class="panel-body" id="panel-body-staff" hidden>
+            <div class="staff-fields" id="staff-fields"></div>
+            <div class="dynamic-actions">
+              <button type="button" class="btn btn-secondary btn-sm" data-add-collection="staff">スタッフを追加</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel panel-accordion" data-panel="schedule">
+          <div class="panel-header">
+            <button type="button" class="panel-toggle" aria-expanded="false" aria-controls="panel-body-schedule">公演日程</button>
+          </div>
+          <div class="panel-body" id="panel-body-schedule" hidden>
+            <div class="form-group">
+              <label>受付について</label>
+              <input type="text" data-bind="schedule.noteReception" placeholder="">
+            </div>
+            <div class="form-group">
+              <label>開場について</label>
+              <input type="text" data-bind="schedule.noteOpen" placeholder="">
+            </div>
+            <div class="form-group">
+              <label>上演時間について</label>
+              <input type="text" data-bind="schedule.noteRuntime" placeholder="">
+            </div>
+            <div class="form-group">
+              <label>その他注意</label>
+              <input type="text" data-bind="schedule.noteOther" placeholder="">
+            </div>
+            <div class="schedule-rows" id="schedule-rows"></div>
+            <div class="dynamic-actions">
+              <button type="button" class="btn btn-secondary btn-sm" data-add-collection="scheduleRows">日程を追加</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel panel-accordion" data-panel="ticket">
+          <div class="panel-header">
+            <button type="button" class="panel-toggle" aria-expanded="false" aria-controls="panel-body-ticket">チケット情報</button>
+          </div>
+          <div class="panel-body" id="panel-body-ticket" hidden>
+            <div class="form-group">
+              <label>タイトル</label>
+              <input type="text" data-bind="ticket.title" placeholder="チケット情報">
+            </div>
+            <div class="form-group">
+              <label>ボタン文言</label>
+              <input type="text" data-bind="ticket.buttonText" placeholder="予約する">
+            </div>
+            <div class="form-group">
+              <label>ボタンURL</label>
+              <input type="url" data-bind="ticket.buttonUrl" placeholder="https://...">
+            </div>
+            <div class="form-group">
+              <label>席種</label>
+              <input type="text" data-bind="ticket.seatType" placeholder="">
+            </div>
+            <div class="form-group">
+              <label>支払い注意</label>
+              <input type="text" data-bind="ticket.paymentNote" placeholder="">
+            </div>
+            <div class="form-group">
+              <label>当日券</label>
+              <input type="text" data-bind="ticket.sameDayTicket" placeholder="">
+            </div>
+            <div class="form-group">
+              <label>年齢制限など</label>
+              <input type="text" data-bind="ticket.ageNote" placeholder="">
+            </div>
+            <div class="form-group">
+              <label>備考</label>
+              <textarea data-bind="ticket.notes" rows="2" placeholder=""></textarea>
+            </div>
+            <div class="prices-fields" id="prices-fields"></div>
+            <div class="dynamic-actions">
+              <button type="button" class="btn btn-secondary btn-sm" data-add-collection="prices">料金を追加</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel panel-accordion" data-panel="access">
+          <div class="panel-header">
+            <button type="button" class="panel-toggle" aria-expanded="false" aria-controls="panel-body-access">会場・アクセス</button>
+          </div>
+          <div class="panel-body" id="panel-body-access" hidden>
+            <div class="form-group">
+              <label>会場名</label>
+              <input type="text" data-bind="access.venueName" placeholder="">
+            </div>
+            <div class="form-group">
+              <label>住所</label>
+              <input type="text" data-bind="access.address" placeholder="">
+            </div>
+            <div class="form-group">
+              <label>会場URL</label>
+              <input type="url" data-bind="access.venueUrl" placeholder="">
+            </div>
+            <div class="form-group">
+              <label>地図URL</label>
+              <input type="url" data-bind="access.mapUrl" placeholder="Google Maps等">
+            </div>
+            <div class="form-group">
+              <label>アクセス文</label>
+              <textarea data-bind="access.accessText" rows="3" placeholder=""></textarea>
+            </div>
+            <div class="form-group">
+              <label>最寄り駅1</label>
+              <input type="text" data-bind="access.station1" placeholder="">
+            </div>
+            <div class="form-group">
+              <label>最寄り駅2</label>
+              <input type="text" data-bind="access.station2" placeholder="">
+            </div>
+            <div class="form-group">
+              <label>注意事項</label>
+              <input type="text" data-bind="access.notice" placeholder="">
+            </div>
+          </div>
+        </section>
+
+        <section class="panel panel-accordion" data-panel="faq">
+          <div class="panel-header">
+            <button type="button" class="panel-toggle" aria-expanded="false" aria-controls="panel-body-faq">よくある質問 / 観劇ガイド</button>
+            <label class="panel-control"><input type="checkbox" data-bind="sections.faq" checked> 出力する</label>
+          </div>
+          <div class="panel-body" id="panel-body-faq" hidden>
+            <div class="faq-fields" id="faq-fields"></div>
+            <div class="dynamic-actions">
+              <button type="button" class="btn btn-secondary btn-sm" data-add-collection="faq">質問を追加</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel panel-accordion" data-panel="contact">
+          <div class="panel-header">
+            <button type="button" class="panel-toggle" aria-expanded="false" aria-controls="panel-body-contact">お問い合わせ</button>
+            <label class="panel-control"><input type="checkbox" data-bind="sections.contact" checked> 出力する</label>
+          </div>
+          <div class="panel-body" id="panel-body-contact" hidden>
+            <div class="form-group">
+              <label>メール</label>
+              <input type="email" data-bind="contact.email" placeholder="">
+            </div>
+            <div class="form-group">
+              <label>電話</label>
+              <input type="tel" data-bind="contact.phone" placeholder="">
+            </div>
+            <div class="form-group">
+              <label>ウェブサイトURL</label>
+              <input type="url" data-bind="contact.websiteUrl" placeholder="">
+            </div>
+            <div class="form-group">
+              <label>X (Twitter) URL</label>
+              <input type="url" data-bind="contact.xUrl" placeholder="">
+            </div>
+            <div class="form-group">
+              <label>Instagram URL</label>
+              <input type="url" data-bind="contact.instagramUrl" placeholder="">
+            </div>
+          </div>
+        </section>
+
+        <section class="panel panel-accordion" data-panel="cta">
+          <div class="panel-header">
+            <button type="button" class="panel-toggle" aria-expanded="false" aria-controls="panel-body-cta">最後の案内</button>
+          </div>
+          <div class="panel-body" id="panel-body-cta" hidden>
+            <div class="form-group">
+              <label>タイトル</label>
+              <input type="text" data-bind="cta.title" placeholder="ご予約はこちら">
+            </div>
+            <div class="form-group">
+              <label>テキスト</label>
+              <textarea data-bind="cta.text" rows="2" placeholder=""></textarea>
+            </div>
+            <div class="form-group">
+              <label>ボタン文言</label>
+              <input type="text" data-bind="cta.buttonText" placeholder="チケット予約">
+            </div>
+            <div class="form-group">
+              <label>ボタンURL</label>
+              <input type="url" data-bind="cta.buttonUrl" placeholder="">
+            </div>
+          </div>
+        </section>
+
+        <section class="panel panel-accordion" data-panel="footer">
+          <div class="panel-header">
+            <button type="button" class="panel-toggle" aria-expanded="false" aria-controls="panel-body-footer">フッター</button>
+          </div>
+          <div class="panel-body" id="panel-body-footer" hidden>
+            <div class="form-group">
+              <label>主催者名</label>
+              <input type="text" data-bind="footer.organizer" placeholder="">
+            </div>
+            <div class="form-group">
+              <label>著作権表記</label>
+              <input type="text" data-bind="footer.copyright" placeholder="© 2026">
+            </div>
+          </div>
+        </section>
+
+        <section class="panel panel-accordion" data-panel="design">
+          <div class="panel-header">
+            <button type="button" class="panel-toggle" aria-expanded="false" aria-controls="panel-body-design">デザイン設定</button>
+          </div>
+          <div class="panel-body" id="panel-body-design" hidden>
+            <div class="form-group">
+              <label>メインカラー</label>
+              <input type="color" data-bind="design.primaryColor" value="#111827">
+            </div>
+            <div class="form-group">
+              <label>アクセントカラー</label>
+              <input type="color" data-bind="design.accentColor" value="#c026d3">
+            </div>
+            <div class="form-group checkbox-group">
+              <label><input type="checkbox" data-bind="design.useAutoCtaButtonColor" checked> 案内ボタン色を自動調整</label>
+            </div>
+            <div class="form-group">
+              <label>案内ボタン色</label>
+              <input type="color" data-bind="design.ctaButtonColor" value="#ffffff" id="input-cta-button-color">
+            </div>
+            <div class="form-group">
+              <label>背景色</label>
+              <input type="color" data-bind="design.backgroundColor" value="#f9fafb">
+            </div>
+            <div class="form-group">
+              <label>テキスト色</label>
+              <input type="color" data-bind="design.textColor" value="#111827">
+            </div>
+            <div class="form-group">
+              <label>角丸 (px)</label>
+              <input type="number" data-bind="design.borderRadius" min="0" value="16">
+            </div>
+            <div class="form-group">
+              <label>セクション余白 (px)</label>
+              <input type="number" data-bind="design.sectionPadding" min="0" value="24">
+            </div>
+            <div class="form-group">
+              <label>ボタンスタイル</label>
+              <select data-bind="design.buttonStyle">
+                <option value="solid">solid</option>
+                <option value="outline">outline</option>
+                <option value="ghost">ghost</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>フォント</label>
+              <select data-bind="design.fontFamily">
+                <option value="sans-serif">sans-serif</option>
+                <option value="serif">serif</option>
+                <option value="modern">modern</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel panel-accordion" data-panel="seo">
+          <div class="panel-header">
+            <button type="button" class="panel-toggle" aria-expanded="false" aria-controls="panel-body-seo">SEO設定</button>
+          </div>
+          <div class="panel-body" id="panel-body-seo" hidden>
+            <div class="form-group">
+              <label>meta description</label>
+              <textarea data-bind="seo.metaDescription" rows="2" placeholder=""></textarea>
+            </div>
+            <div class="form-group">
+              <label>OG タイトル</label>
+              <input type="text" data-bind="seo.ogTitle" placeholder="">
+            </div>
+            <div class="form-group">
+              <label>OG 説明</label>
+              <textarea data-bind="seo.ogDescription" rows="2" placeholder=""></textarea>
+            </div>
+            <div class="form-group">
+              <label>OG 画像URL</label>
+              <input type="url" data-bind="seo.ogImageURL" placeholder="">
+            </div>
+            <div class="form-group">
+              <label>favicon URL</label>
+              <input type="url" data-bind="seo.faviconURL" placeholder="">
+            </div>
+          </div>
+        </section>
+
+        <section class="panel panel-accordion" data-panel="actions">
+          <div class="panel-header">
+            <button type="button" class="panel-toggle" aria-expanded="false" aria-controls="panel-body-actions">データ / 出力</button>
+          </div>
+          <div class="panel-body" id="panel-body-actions" hidden>
+            <p class="form-help" id="save-status" aria-live="polite">未保存の変更は自動で下書き保存されます。</p>
+            <p class="form-help">完成HTMLをダウンロードすると、見た目込みでそのまま使える1ファイルの完成版を書き出します。</p>
+            <p class="form-help">CSSダウンロードは、既存サイトや別ページに同じ配色やボタンデザインを移したいときに使います。</p>
+            <div class="validation-summary" id="publish-check-summary" aria-live="polite"></div>
+            <div class="action-buttons">
+              <button type="button" class="btn btn-primary" id="btn-save-local">ブラウザに保存</button>
+              <button type="button" class="btn btn-secondary" id="btn-load-local">ブラウザから読込</button>
+              <button type="button" class="btn btn-secondary" id="btn-reset-project">画面を初期化</button>
+              <button type="button" class="btn btn-secondary" id="btn-download-json">設定データをダウンロード</button>
+              <label class="btn btn-secondary">
+                設定データを読込
+                <input type="file" accept=".json" id="input-upload-json" hidden>
+              </label>
+              <button type="button" class="btn btn-primary" id="btn-download-html">完成HTMLをダウンロード</button>
+              <button type="button" class="btn btn-primary" id="btn-download-css">CSSダウンロード</button>
+            </div>
+            <div class="support-box">
+              <p class="form-help">このジェネレータが役に立ったら、開発継続のためのチップで応援できます。</p>
+              <a class="btn btn-secondary support-link" href="https://buy.stripe.com/eVqaEW31F85U9UE22NdMI01" target="_blank" rel="noopener noreferrer">チップで応援する</a>
+            </div>
+          </div>
+        </section>
+      </div>
+    </aside>
+
+    <main class="preview-column">
+      <div class="preview-toolbar">
+        <button type="button" class="btn btn-sm" id="btn-preview-mobile" data-mode="mobile">スマホ表示 (390px)</button>
+        <button type="button" class="btn btn-sm" id="btn-preview-desktop" data-mode="desktop">PC表示 (1280px)</button>
+        <span class="preview-size-label" id="preview-size-label">390px</span>
+      </div>
+      <div class="preview-wrapper">
+        <iframe id="preview-frame" class="preview-frame preview-frame-mobile" title="LPプレビュー"></iframe>
+      </div>
+    </main>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

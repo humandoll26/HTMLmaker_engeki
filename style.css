@@ -1,0 +1,454 @@
+/* 小劇場LPドラフトジェネレータ - アプリUI用 */
+
+:root {
+  --app-bg: #f1f5f9;
+  --app-header-bg: #1e293b;
+  --app-header-text: #f8fafc;
+  --card-bg: #ffffff;
+  --card-border: #e2e8f0;
+  --card-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  --input-border: #cbd5e1;
+  --input-focus: #6366f1;
+  --btn-primary-bg: #4f46e5;
+  --btn-primary-hover: #4338ca;
+  --btn-secondary-bg: #e2e8f0;
+  --btn-secondary-hover: #cbd5e1;
+  --text: #1e293b;
+  --text-muted: #64748b;
+  --radius: 12px;
+  --radius-sm: 8px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", "Hiragino Sans", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--app-bg);
+  min-height: 100vh;
+}
+
+.app-header {
+  background: var(--app-header-bg);
+  color: var(--app-header-text);
+  padding: 14px 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.app-layout {
+  display: flex;
+  flex-wrap: wrap;
+  min-height: calc(100vh - 52px);
+}
+
+.form-column {
+  flex: 0 0 420px;
+  max-width: 420px;
+  padding: 16px;
+  overflow-y: auto;
+  max-height: calc(100vh - 52px);
+}
+
+.preview-column {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: #cbd5e1;
+  padding: 16px;
+}
+
+.form-panels {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.panel {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  box-shadow: var(--card-shadow);
+  padding: 16px;
+}
+
+.panel-accordion {
+  padding: 0;
+  overflow: hidden;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--card-border);
+}
+
+.panel-body {
+  padding: 16px;
+}
+
+.panel-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.panel-toggle::after {
+  content: "+";
+  flex: 0 0 auto;
+  font-size: 1.1rem;
+  color: var(--text-muted);
+}
+
+.panel-accordion.is-open .panel-toggle::after {
+  content: "-";
+}
+
+.panel-control {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.panel-title {
+  margin: 0 0 12px 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text);
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--card-border);
+}
+
+.form-group {
+  margin-bottom: 12px;
+}
+
+.form-group:last-child {
+  margin-bottom: 0;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.form-group input[type="text"],
+.form-group input[type="url"],
+.form-group input[type="email"],
+.form-group input[type="tel"],
+.form-group input[type="number"],
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.form-group input[type="color"] {
+  width: 100%;
+  height: 36px;
+  padding: 2px;
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--input-focus);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
+.form-group.checkbox-group label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.form-group.checkbox-group input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+}
+
+.form-help {
+  margin: 0 0 12px 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.inline-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 8px 0;
+}
+
+.field-status {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* 動的フィールド（見どころ・キャスト等） */
+.highlight-item,
+.cast-item,
+.staff-item,
+.schedule-row-fields,
+.price-item,
+.faq-item {
+  margin-bottom: 12px;
+  padding: 10px;
+  background: #f8fafc;
+  border-radius: var(--radius-sm);
+  border: 1px solid #e2e8f0;
+}
+
+.dynamic-actions,
+.item-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+.item-actions {
+  margin-top: 8px;
+}
+
+.dynamic-actions .btn,
+.item-actions .btn {
+  width: auto;
+}
+
+.validation-summary {
+  display: none;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+}
+
+.validation-summary.is-visible {
+  display: block;
+}
+
+.validation-summary.is-error {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.validation-summary.is-warning {
+  border-color: #fde68a;
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.validation-summary.is-success {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.validation-summary p,
+.validation-summary ul {
+  margin: 0;
+}
+
+.validation-summary ul {
+  padding-left: 18px;
+  margin-top: 6px;
+}
+
+.preview-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.preview-size-label {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-left: 8px;
+}
+
+.preview-wrapper {
+  flex: 1;
+  min-height: 400px;
+  background: #94a3b8;
+  border-radius: var(--radius);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.preview-frame {
+  border: none;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  transition: width 0.2s ease, height 0.2s ease;
+}
+
+.preview-frame-mobile {
+  width: 390px;
+  height: 680px;
+  max-width: 100%;
+  max-height: calc(100vh - 140px);
+}
+
+.preview-frame-desktop {
+  width: 1280px;
+  height: 800px;
+  max-width: 100%;
+  max-height: calc(100vh - 140px);
+}
+
+/* ボタン */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.btn-primary {
+  background: var(--btn-primary-bg);
+  color: #fff;
+  border-color: var(--btn-primary-bg);
+}
+
+.btn-primary:hover {
+  background: var(--btn-primary-hover);
+  border-color: var(--btn-primary-hover);
+}
+
+.btn-secondary {
+  background: var(--btn-secondary-bg);
+  color: var(--text);
+  border-color: #cbd5e1;
+}
+
+.btn-secondary:hover {
+  background: var(--btn-secondary-hover);
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.action-buttons .btn {
+  width: 100%;
+}
+
+.support-box {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--card-border);
+}
+
+.support-link {
+  width: 100%;
+  text-decoration: none;
+}
+
+.panel-actions .btn + .btn {
+  margin-top: 0;
+}
+
+/* レスポンシブ */
+@media (max-width: 900px) {
+  .app-layout {
+    flex-direction: column;
+  }
+
+  .form-column {
+    flex: 1 1 auto;
+    max-width: 100%;
+    max-height: none;
+  }
+
+  .preview-column {
+    min-height: 500px;
+  }
+
+  .panel-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .panel-control {
+    white-space: normal;
+  }
+
+  .inline-actions {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .preview-frame-mobile {
+    width: 100%;
+    max-width: 390px;
+  }
+
+  .preview-frame-desktop {
+    width: 100%;
+    max-width: 100%;
+  }
+}
