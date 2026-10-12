@@ -143,7 +143,7 @@
     if (Array.isArray(obj)) return obj.map(deepClone);
     var out = {};
     for (var k in obj) {
-      if (Object.prototype.hasOwnProperty.call(obj, k)) out[k] = deepClone(obj[k]);
+      if (isSafeKey(k) && Object.prototype.hasOwnProperty.call(obj, k)) out[k] = deepClone(obj[k]);
     }
     return out;
   }
@@ -153,7 +153,7 @@
     if (Array.isArray(override)) return deepClone(override);
     var result = deepClone(base || {});
     for (var k in override) {
-      if (!Object.prototype.hasOwnProperty.call(override, k)) continue;
+      if (!isSafeKey(k) || !Object.prototype.hasOwnProperty.call(override, k)) continue;
       if (
         override[k] !== null &&
         typeof override[k] === "object" &&
@@ -240,6 +240,14 @@
     return div.innerHTML;
   }
 
+  function isSafeKey(key) {
+    return key !== "__proto__" && key !== "prototype" && key !== "constructor";
+  }
+
+  function escapeAttribute(value) {
+    return escapeHtml(value).replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
+
   function normalizeHexColor(value, fallback) {
     if (typeof value !== "string") return fallback;
     var hex = value.trim();
@@ -270,18 +278,41 @@
     return value == null ? "" : String(value).trim();
   }
 
-  function isValidLink(value) {
+  function isValidLink(value, kind) {
     var v = trimValue(value);
     if (!v) return true;
-    if (v[0] === "#") return true;
-    if (/^(mailto:|tel:)/i.test(v)) return true;
-    if (/^data:image\//i.test(v)) return true;
+    if (/[\u0000-\u001f\u007f]/.test(v)) return false;
     try {
-      var parsed = new URL(v);
-      return parsed.protocol === "http:" || parsed.protocol === "https:";
+      var parsed = new URL(v, "https://lp.invalid/");
+      if (parsed.protocol === "http:" || parsed.protocol === "https:") return true;
+      if (kind === "email") return parsed.protocol === "mailto:";
+      if (kind === "phone") return parsed.protocol === "tel:";
+      if (!kind) return parsed.protocol === "mailto:" || parsed.protocol === "tel:";
+      if (kind === "image" && parsed.protocol === "data:") {
+        return /^data:image\/(png|jpeg|gif|webp|avif|bmp|x-icon|vnd\.microsoft\.icon);base64,[a-z0-9+/]+={0,2}$/i.test(v);
+      }
+      return false;
     } catch (e) {
       return false;
     }
+  }
+
+  function safeUrl(value, kind) {
+    return isValidLink(value, kind) ? trimValue(value) : "";
+  }
+
+  // Preserve drafts as entered; enforce URL policy at the shared preview/export sink.
+  function dataForOutput(data) {
+    var d = deepClone(data);
+    ["hero.buttonUrl", "ticket.buttonUrl", "access.venueUrl", "access.mapUrl",
+      "contact.websiteUrl", "contact.xUrl", "contact.instagramUrl", "cta.buttonUrl"].forEach(function (path) {
+      setByPath(d, path, safeUrl(getByPath(d, path)));
+    });
+    ["hero.imageUrl", "seo.ogImageURL", "seo.faviconURL"].forEach(function (path) {
+      setByPath(d, path, safeUrl(getByPath(d, path), "image"));
+    });
+    (d.cast || []).forEach(function (item) { item.imageUrl = safeUrl(item.imageUrl, "image"); });
+    return d;
   }
 
   function getImageSourceLabel(value) {
@@ -320,8 +351,8 @@
       }
     }
 
-    function validateUrl(value, label) {
-      if (!isValidLink(value)) pushError(label + " の形式が正しくありません。");
+    function validateUrl(value, label, kind) {
+      if (!isValidLink(value, kind)) pushError(label + " の形式が正しくありません。安全でないURLはプレビューから除外されます。");
     }
 
     requireText(d.page && d.page.title, "ページタイトル");
@@ -347,7 +378,7 @@
       pushError("公演日程は少なくとも1件、日付と開演時間を入力してください。");
     }
 
-    validateUrl(d.hero && d.hero.imageUrl, "メインビジュアルURL");
+    validateUrl(d.hero && d.hero.imageUrl, "メインビジュアルURL", "image");
     validateUrl(d.hero && d.hero.buttonUrl, "HeroボタンURL");
     validateUrl(d.ticket && d.ticket.buttonUrl, "チケットボタンURL");
     validateUrl(d.access && d.access.venueUrl, "会場URL");
@@ -356,11 +387,13 @@
     validateUrl(d.contact && d.contact.xUrl, "X URL");
     validateUrl(d.contact && d.contact.instagramUrl, "Instagram URL");
     validateUrl(d.cta && d.cta.buttonUrl, "Final CTAボタンURL");
-    validateUrl(d.seo && d.seo.ogImageURL, "OG画像URL");
-    validateUrl(d.seo && d.seo.faviconURL, "favicon URL");
+    validateUrl(d.seo && d.seo.ogImageURL, "OG画像URL", "image");
+    validateUrl(d.seo && d.seo.faviconURL, "favicon URL", "image");
+    if (d.contact && trimValue(d.contact.email)) validateUrl("mailto:" + d.contact.email, "メール", "email");
+    if (d.contact && trimValue(d.contact.phone)) validateUrl("tel:" + d.contact.phone, "電話", "phone");
 
     ((d.cast || [])).forEach(function (castItem, index) {
-      validateUrl(castItem && castItem.imageUrl, "キャスト " + (index + 1) + " の画像URL");
+      validateUrl(castItem && castItem.imageUrl, "キャスト " + (index + 1) + " の画像URL", "image");
     });
 
     if (sectionVisible(d, "story") && !trimValue(d.story && d.story.lead) && !trimValue(d.story && d.story.body)) {
@@ -403,13 +436,13 @@
   }
 
   function generateLPHTML(data, options) {
-    var d = data || lpData;
+    var d = dataForOutput(data || lpData);
     var opts = options || {};
-    var esc = escapeHtml;
+    var esc = escapeAttribute;
     var title = esc(d.page && d.page.title ? d.page.title : "公演");
     var metaDesc = esc((d.seo && d.seo.metaDescription) || "");
-    var ogTitle = esc((d.seo && d.seo.ogTitle) || title);
-    var ogDesc = esc((d.seo && d.seo.ogDescription) || metaDesc);
+    var ogTitle = esc((d.seo && d.seo.ogTitle) || (d.page && d.page.title) || "公演");
+    var ogDesc = esc((d.seo && d.seo.ogDescription) || (d.seo && d.seo.metaDescription) || "");
     var ogImg = esc((d.seo && d.seo.ogImageURL) || "");
     var favicon = esc((d.seo && d.seo.faviconURL) || "");
     var fontFamily = (d.design && d.design.fontFamily) || "sans-serif";
@@ -540,8 +573,8 @@
     if (sectionVisible(d, "contact") && d.contact && (d.contact.email || d.contact.phone || d.contact.websiteUrl || d.contact.xUrl || d.contact.instagramUrl)) {
       var c = d.contact;
       html += "  <!-- Contact -->\n  <section class=\"section contact\">\n    <h2 class=\"section-title\">お問い合わせ</h2>\n    <ul class=\"contact-list\">\n";
-      if (c.email) html += "      <li>メール: <a href=\"mailto:" + esc(c.email) + "\">" + esc(c.email) + "</a></li>\n";
-      if (c.phone) html += "      <li>電話: " + esc(c.phone) + "</li>\n";
+      if (c.email) html += "      <li>メール: " + (safeUrl("mailto:" + c.email, "email") ? "<a href=\"" + esc(safeUrl("mailto:" + c.email, "email")) + "\">" + esc(c.email) + "</a>" : esc(c.email)) + "</li>\n";
+      if (c.phone) html += "      <li>電話: " + (safeUrl("tel:" + c.phone, "phone") ? "<a href=\"" + esc(safeUrl("tel:" + c.phone, "phone")) + "\">" + esc(c.phone) + "</a>" : esc(c.phone)) + "</li>\n";
       if (c.websiteUrl) html += "      <li><a href=\"" + esc(c.websiteUrl) + "\" target=\"_blank\" rel=\"noopener\">公式サイト</a></li>\n";
       if (c.xUrl) html += "      <li><a href=\"" + esc(c.xUrl) + "\" target=\"_blank\" rel=\"noopener\">X (Twitter)</a></li>\n";
       if (c.instagramUrl) html += "      <li><a href=\"" + esc(c.instagramUrl) + "\" target=\"_blank\" rel=\"noopener\">Instagram</a></li>\n";
@@ -565,17 +598,17 @@
   function generateLPCSS(data) {
     var d = data || lpData;
     var design = d.design || {};
-    var primary = design.primaryColor || "#111827";
-    var accent = design.accentColor || "#c026d3";
+    var primary = normalizeHexColor(design.primaryColor, "#111827");
+    var accent = normalizeHexColor(design.accentColor, "#c026d3");
     var autoCtaButtonColor = design.useAutoCtaButtonColor !== false;
     var ctaButtonBg = autoCtaButtonColor
       ? getContrastColor(primary)
       : normalizeHexColor(design.ctaButtonColor, getContrastColor(primary));
     var ctaButtonText = getContrastColor(ctaButtonBg);
-    var bg = design.backgroundColor || "#f9fafb";
-    var text = design.textColor || "#111827";
-    var radius = Number(design.borderRadius) || 16;
-    var pad = Number(design.sectionPadding) || 24;
+    var bg = normalizeHexColor(design.backgroundColor, "#f9fafb");
+    var text = normalizeHexColor(design.textColor, "#111827");
+    var radius = Number.isFinite(Number(design.borderRadius)) ? Math.max(0, Math.min(100, Number(design.borderRadius))) : 16;
+    var pad = Number.isFinite(Number(design.sectionPadding)) ? Math.max(0, Math.min(200, Number(design.sectionPadding))) : 24;
     var btnStyle = design.buttonStyle || "solid";
     var fontFamily = design.fontFamily === "serif" ? "'Noto Serif JP', serif" : design.fontFamily === "modern" ? "'Noto Sans JP', sans-serif" : "sans-serif";
 
@@ -671,10 +704,8 @@
   function renderPreview() {
     var iframe = document.getElementById("preview-frame");
     if (!iframe || !lpData) return;
-    var doc = iframe.contentDocument || iframe.contentWindow.document;
-    doc.open();
-    doc.write(generateLPHTML(lpData, { inlineCss: true }));
-    doc.close();
+    iframe.setAttribute("sandbox", "");
+    iframe.srcdoc = generateLPHTML(lpData, { inlineCss: true });
   }
 
   function updateFormFromData() {
@@ -982,8 +1013,8 @@
   function onImageFileSelected(path, fileInput) {
     var file = fileInput && fileInput.files && fileInput.files[0];
     if (!file) return;
-    if (!/^image\//i.test(file.type || "")) {
-      alert("画像ファイルを選択してください。");
+    if (!/^image\/(png|jpeg|gif|webp|avif|bmp|x-icon|vnd\.microsoft\.icon)$/i.test(file.type || "")) {
+      alert("PNG、JPEG、GIF、WebP、AVIF、BMP、ICOの画像を選択してください。");
       fileInput.value = "";
       return;
     }
